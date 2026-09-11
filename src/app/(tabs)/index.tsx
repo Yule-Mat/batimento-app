@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -13,6 +13,8 @@ export default function RitmoScreen() {
   const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  const tapTimes = useRef<number[]>([]);
+
   function decreaseBpm() {
     setBpm((currentBpm) => Math.max(30, currentBpm - 1));
   }
@@ -24,6 +26,49 @@ export default function RitmoScreen() {
   function toggleMetronome() {
     setIsPlaying((currentValue) => !currentValue);
   }
+
+  function tapTempo() {
+  const now = Date.now();
+
+  const lastTap = tapTimes.current[tapTimes.current.length - 1];
+
+  if (lastTap && now - lastTap > 2000) {
+    tapTimes.current = [];
+  }
+
+  tapTimes.current.push(now);
+
+  if (tapTimes.current.length > 5) {
+    tapTimes.current.shift();
+  }
+
+  if (tapTimes.current.length < 2) {
+    return;
+  }
+
+  const intervals = [];
+
+  for (let i = 1; i < tapTimes.current.length; i += 1) {
+    intervals.push(
+      tapTimes.current[i] - tapTimes.current[i - 1]
+    );
+  }
+
+  const averageInterval =
+    intervals.reduce((sum, interval) => sum + interval, 0) /
+    intervals.length;
+
+  const calculatedBpm = Math.round(
+    60000 / averageInterval
+  );
+
+  const limitedBpm = Math.min(
+    300,
+    Math.max(30, calculatedBpm)
+  );
+
+  setBpm(limitedBpm);
+}
 
   return (
     <BatimentoScreen style={styles.screen}>
@@ -60,6 +105,13 @@ export default function RitmoScreen() {
             onPress={decreaseBpm}
             style={styles.bpmButton}
           />
+
+          <BatimentoButton
+            title="TAP"
+            variant="secondary"
+            onPress={tapTempo}
+            style={styles.tapButton}
+           />
 
           <BatimentoButton
             title="+"
@@ -149,4 +201,7 @@ const styles = StyleSheet.create({
   bpmButton: {
     flex: 1,
   },
+  tapButton: {
+  flex: 1.5,
+},
 });
