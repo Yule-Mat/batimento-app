@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -12,6 +12,7 @@ import { theme } from '../../constants/theme';
 export default function RitmoScreen() {
   const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentBeat, setCurrentBeat] = useState(0);
 
   const tapTimes = useRef<number[]>([]);
 
@@ -70,6 +71,23 @@ export default function RitmoScreen() {
   setBpm(limitedBpm);
 }
 
+useEffect(() => {
+  if (!isPlaying) {
+    setCurrentBeat(0);
+    return;
+  }
+
+  const intervalMs = 60000 / bpm;
+
+  const interval = setInterval(() => {
+    setCurrentBeat((beat) => (beat + 1) % 4);
+  }, intervalMs);
+
+  return () => {
+    clearInterval(interval);
+  };
+}, [bpm, isPlaying]);
+
   return (
     <BatimentoScreen style={styles.screen}>
       <View style={styles.content}>
@@ -91,11 +109,16 @@ export default function RitmoScreen() {
           </Text>
 
           <View style={styles.beats}>
-            <View style={[styles.beat, styles.activeBeat]} />
-            <View style={styles.beat} />
-            <View style={styles.beat} />
-            <View style={styles.beat} />
-          </View>
+           {[0, 1, 2, 3].map((beat) => (
+            <View
+             key={beat}
+             style={[
+              styles.beat,
+              currentBeat === beat && styles.activeBeat,
+            ]}
+           />
+         ))}
+      </View>
         </BatimentoCard>
 
         <View style={styles.bpmControls}>
