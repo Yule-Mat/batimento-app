@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -9,6 +10,21 @@ import {
 import { theme } from '../../constants/theme';
 
 export default function RitmoScreen() {
+  const [bpm, setBpm] = useState(120);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  function decreaseBpm() {
+    setBpm((currentBpm) => Math.max(30, currentBpm - 1));
+  }
+
+  function increaseBpm() {
+    setBpm((currentBpm) => Math.min(300, currentBpm + 1));
+  }
+
+  function toggleMetronome() {
+    setIsPlaying((currentValue) => !currentValue);
+  }
+
   return (
     <BatimentoScreen style={styles.screen}>
       <View style={styles.content}>
@@ -18,7 +34,7 @@ export default function RitmoScreen() {
 
         <BatimentoCard style={styles.metronomeCard}>
           <Text style={styles.bpm}>
-            120
+            {bpm}
           </Text>
 
           <Text style={styles.bpmLabel}>
@@ -37,11 +53,25 @@ export default function RitmoScreen() {
           </View>
         </BatimentoCard>
 
+        <View style={styles.bpmControls}>
+          <BatimentoButton
+            title="-"
+            variant="secondary"
+            onPress={decreaseBpm}
+            style={styles.bpmButton}
+          />
+
+          <BatimentoButton
+            title="+"
+            variant="secondary"
+            onPress={increaseBpm}
+            style={styles.bpmButton}
+          />
+        </View>
+
         <BatimentoButton
-          title="INICIAR"
-          onPress={() => {
-            console.log('Iniciar metrônomo');
-          }}
+          title={isPlaying ? 'PARAR' : 'INICIAR'}
+          onPress={toggleMetronome}
         />
       </View>
     </BatimentoScreen>
@@ -108,5 +138,15 @@ const styles = StyleSheet.create({
 
   activeBeat: {
     backgroundColor: theme.colors.brand.primary,
+  },
+
+  bpmControls: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+  },
+
+  bpmButton: {
+    flex: 1,
   },
 });
