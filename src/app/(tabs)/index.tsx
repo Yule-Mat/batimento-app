@@ -1,48 +1,112 @@
 import { StyleSheet, Text, View } from 'react-native';
+
+import {
+  BatimentoButton,
+  BatimentoCard,
+  BatimentoScreen,
+} from '../../components/batimento';
+
 import { theme } from '../../constants/theme';
 
 export default function RitmoScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.brand}>BATIMENTO</Text>
+    <BatimentoScreen style={styles.screen}>
+      <View style={styles.content}>
+        <Text style={styles.brand}>
+          BATIMENTO
+        </Text>
 
-      <Text style={styles.title}>
-        Ouvir. Ver. Sentir.
-      </Text>
+        <BatimentoCard style={styles.metronomeCard}>
+          <Text style={styles.bpm}>
+            120
+          </Text>
 
-      <Text style={styles.subtitle}>
-        O ritmo começa aqui.
-      </Text>
-    </View>
+          <Text style={styles.bpmLabel}>
+            BPM
+          </Text>
+
+          <Text style={styles.meter}>
+            4 / 4
+          </Text>
+
+          <View style={styles.beats}>
+            <View style={[styles.beat, styles.activeBeat]} />
+            <View style={styles.beat} />
+            <View style={styles.beat} />
+            <View style={styles.beat} />
+          </View>
+        </BatimentoCard>
+
+        <BatimentoButton
+          title="INICIAR"
+          onPress={() => {
+            console.log('Iniciar metrônomo');
+          }}
+        />
+      </View>
+    </BatimentoScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
+    backgroundColor: theme.colors.neutral.background,
+  },
+
+  content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: theme.spacing.lg,
-    backgroundColor: theme.colors.brand.primary,
+    justifyContent: 'center',
   },
 
   brand: {
-    fontSize: theme.typography.size.title,
+    marginBottom: theme.spacing.xl,
+    textAlign: 'center',
+    fontSize: theme.typography.size.subtitle,
     fontWeight: theme.typography.weight.bold,
-    color: theme.colors.neutral.white,
+    color: theme.colors.brand.primary,
     letterSpacing: 2,
   },
 
-  title: {
+  metronomeCard: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+    paddingVertical: theme.spacing.xl,
+  },
+
+  bpm: {
+    fontSize: theme.typography.size.display,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.neutral.text,
+  },
+
+  bpmLabel: {
+    fontSize: theme.typography.size.caption,
+    color: theme.colors.neutral.textSecondary,
+  },
+
+  meter: {
     marginTop: theme.spacing.lg,
     fontSize: theme.typography.size.subtitle,
     fontWeight: theme.typography.weight.semibold,
-    color: theme.colors.neutral.white,
+    color: theme.colors.neutral.text,
   },
 
-  subtitle: {
-    marginTop: theme.spacing.sm,
-    fontSize: theme.typography.size.body,
-    color: theme.colors.neutral.background,
+  beats: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.lg,
+  },
+
+  beat: {
+    width: 12,
+    height: 12,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1.5,
+    borderColor: theme.colors.brand.primary,
+  },
+
+  activeBeat: {
+    backgroundColor: theme.colors.brand.primary,
   },
 });
