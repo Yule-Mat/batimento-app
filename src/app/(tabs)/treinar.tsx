@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { theme } from '../../constants/theme';
 
 export default function TreinarScreen() {
   return (
@@ -16,17 +17,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#F7F2F0',
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.neutral.background,
   },
+
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#292426',
+    fontSize: theme.typography.size.title,
+    fontWeight: theme.typography.weight.bold,
+    color: theme.colors.neutral.text,
   },
+
   subtitle: {
-    marginTop: 8,
-    fontSize: 16,
-    color: '#6C6464',
+    marginTop: theme.spacing.sm,
+    fontSize: theme.typography.size.body,
+    color: theme.colors.neutral.textSecondary,
   },
 });

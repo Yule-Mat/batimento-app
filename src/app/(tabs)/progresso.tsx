@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { theme } from '../../constants/theme';
 
 export default function ProgressoScreen() {
   return (
