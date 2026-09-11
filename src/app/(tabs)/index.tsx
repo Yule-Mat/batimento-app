@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import {
   BatimentoButton,
@@ -9,10 +14,18 @@ import {
 
 import { theme } from '../../constants/theme';
 
+type BeatAccent = 'normal' | 'accent' | 'strong';
+
 export default function RitmoScreen() {
   const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
+  const [beatAccents, setBeatAccents] = useState<BeatAccent[]>([
+  'strong',
+  'normal',
+  'normal',
+  'normal',
+]);
 
   const tapTimes = useRef<number[]>([]);
 
@@ -70,6 +83,25 @@ export default function RitmoScreen() {
 
   setBpm(limitedBpm);
 }
+  function cycleBeatAccent(beatIndex: number) {
+  setBeatAccents((currentAccents) =>
+    currentAccents.map((accent, index) => {
+      if (index !== beatIndex) {
+        return accent;
+      }
+
+      if (accent === 'normal') {
+        return 'accent';
+      }
+
+      if (accent === 'accent') {
+        return 'strong';
+      }
+
+      return 'normal';
+    })
+  );
+}
 
 useEffect(() => {
   if (!isPlaying) {
@@ -109,16 +141,32 @@ useEffect(() => {
           </Text>
 
           <View style={styles.beats}>
-           {[0, 1, 2, 3].map((beat) => (
-            <View
-             key={beat}
-             style={[
-              styles.beat,
-              currentBeat === beat && styles.activeBeat,
-            ]}
-           />
-         ))}
-      </View>
+  {[0, 1, 2, 3].map((beat) => {
+    const accent = beatAccents[beat];
+    const isCurrentBeat = currentBeat === beat;
+
+    return (
+      <Pressable
+        key={beat}
+        onPress={() => cycleBeatAccent(beat)}
+        style={styles.beatButton}
+      >
+        <View
+          style={[
+            styles.beat,
+            accent === 'accent' && styles.accentBeat,
+            accent === 'strong' && styles.strongBeat,
+            isCurrentBeat && styles.activeBeat,
+          ]}
+        />
+
+        <Text style={styles.beatNumber}>
+          {beat + 1}
+        </Text>
+      </Pressable>
+    );
+  })}
+</View>
         </BatimentoCard>
 
         <View style={styles.bpmControls}>
@@ -203,17 +251,41 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.lg,
   },
 
-  beat: {
-    width: 12,
-    height: 12,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1.5,
-    borderColor: theme.colors.brand.primary,
-  },
+  beatButton: {
+  alignItems: 'center',
+  gap: theme.spacing.xs,
+},
 
-  activeBeat: {
-    backgroundColor: theme.colors.brand.primary,
-  },
+  beat: {
+  width: 12,
+  height: 12,
+  borderRadius: theme.radius.pill,
+  borderWidth: 1.5,
+  borderColor: theme.colors.brand.primary,
+},
+
+  accentBeat: {
+  width: 18,
+  height: 18,
+  backgroundColor: theme.colors.brand.primaryLight,
+},
+
+strongBeat: {
+  width: 24,
+  height: 24,
+  backgroundColor: theme.colors.brand.primary,
+},
+
+activeBeat: {
+  borderWidth: 3,
+  borderColor: theme.colors.brand.primaryDark,
+},
+
+beatNumber: {
+  fontSize: theme.typography.size.caption,
+  color: theme.colors.neutral.textSecondary,
+},
+
 
   bpmControls: {
     flexDirection: 'row',
