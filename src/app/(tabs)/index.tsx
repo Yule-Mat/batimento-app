@@ -19,6 +19,7 @@ import {
   setAudioModeAsync,
   useAudioPlayer,
 } from 'expo-audio';
+import { useMetronomeClock } from '../../hooks/useMetronomeClock';
 
 const clickSource = require('../../../assets/sounds/click.wav');
 const accentSource = require('../../../assets/sounds/accent.wav');
@@ -70,44 +71,19 @@ useEffect(() => {
   activeBpmRef.current = activeBpm;
 }, [activeBpm]);
 
-  useEffect(() => {
-  if (!isPlaying) {
-    setCurrentBeat(0);
-    return;
-  }
+  useMetronomeClock({
+  isPlaying,
+  bpm: activeBpm,
+  beatsPerMeasure: 4,
 
-  let beat = 0;
-  let timeout: ReturnType<typeof setTimeout>;
+  onBeat: (beat) => {
+    setCurrentBeat(beat);
 
-  setCurrentBeat(0);
-
-  playBeatSound(
-    activeBeatAccentsRef.current[0]
-  );
-
-  function scheduleNextBeat() {
-    const intervalMs =
-      60000 / activeBpmRef.current;
-
-    timeout = setTimeout(() => {
-      beat = (beat + 1) % 4;
-
-      setCurrentBeat(beat);
-
-      playBeatSound(
-        activeBeatAccentsRef.current[beat]
-      );
-
-      scheduleNextBeat();
-    }, intervalMs);
-  }
-
-  scheduleNextBeat();
-
-  return () => {
-    clearTimeout(timeout);
-  };
-}, [isPlaying]);
+    playBeatSound(
+      activeBeatAccentsRef.current[beat]
+    );
+  },
+});
 
 useEffect(() => {
   return () => {
@@ -297,9 +273,7 @@ useEffect(() => {
     pulseOpacity.setValue(1);
     return;
   }
-
   const currentAccent = beatAccents[currentBeat];
-
   let flashStartOpacity = 0.65;
 
   if (currentAccent === 'accent') {
