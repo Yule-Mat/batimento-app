@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Pressable,
   StyleSheet,
   Text,
@@ -13,11 +14,23 @@ import {
 } from '../../components/batimento';
 
 import { theme } from '../../constants/theme';
+import {
+  preload,
+  setAudioModeAsync,
+  useAudioPlayer,
+} from 'expo-audio';
+
+const clickSource = require('../../../assets/sounds/click.wav');
+const accentSource = require('../../../assets/sounds/accent.wav');
+
+preload(clickSource);
+preload(accentSource);
 
 type BeatAccent = 'normal' | 'accent' | 'strong';
 
 export default function RitmoScreen() {
   const [bpm, setBpm] = useState(120);
+  const [activeBpm, setActiveBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [beatAccents, setBeatAccents] = useState<BeatAccent[]>([
@@ -27,15 +40,141 @@ export default function RitmoScreen() {
   'normal',
 ]);
 
+const [activeBeatAccents, setActiveBeatAccents] =
+  useState<BeatAccent[]>([
+    'strong',
+    'normal',
+    'normal',
+    'normal',
+  ]);
+
+const clickPlayer = useAudioPlayer(clickSource);
+
+const accentPlayer = useAudioPlayer(accentSource);
+
+const pulseOpacity = useRef(new Animated.Value(1)).current; 
+
+const activeBeatAccentsRef = useRef(activeBeatAccents);
+
+const bpmHoldTimeout = useRef<ReturnType<typeof setTimeout> | null>(
+  null
+);
+
+const bpmRepeatInterval = useRef<ReturnType<typeof setInterval> | null>(
+  null
+);
+
+const bpmDraftRef = useRef(bpm);
+
+useEffect(() => {
+  activeBeatAccentsRef.current = activeBeatAccents;
+}, [activeBeatAccents]);
+
+  const activeBpmRef = useRef(activeBpm);
+  useEffect(() => {
+  if (!isPlaying) {
+    setCurrentBeat(0);
+    return;
+  }
+
+  let beat = 0;
+  let timeout: ReturnType<typeof setTimeout>;
+
+  setCurrentBeat(0);
+
+  playBeatSound(
+    activeBeatAccentsRef.current[0]
+  );
+
+  function scheduleNextBeat() {
+    const intervalMs =
+      60000 / activeBpmRef.current;
+
+    timeout = setTimeout(() => {
+      beat = (beat + 1) % 4;
+
+      setCurrentBeat(beat);
+
+      playBeatSound(
+        activeBeatAccentsRef.current[beat]
+      );
+
+      scheduleNextBeat();
+    }, intervalMs);
+  }
+
+  scheduleNextBeat();
+
+  return () => {
+    clearTimeout(timeout);
+  };
+}, [isPlaying]);
+
+useEffect(() => {
+  return () => {
+    if (bpmHoldTimeout.current) {
+      clearTimeout(bpmHoldTimeout.current);
+    }
+
+    if (bpmRepeatInterval.current) {
+      clearInterval(bpmRepeatInterval.current);
+    }
+  };
+}, []);
+
   const tapTimes = useRef<number[]>([]);
 
-  function decreaseBpm() {
-    setBpm((currentBpm) => Math.max(30, currentBpm - 1));
+  function changeBpm(amount: number) {
+  setBpm((currentBpm) => {
+    const nextBpm = Math.min(
+      300,
+      Math.max(30, currentBpm + amount)
+    );
+
+    bpmDraftRef.current = nextBpm;
+
+    return nextBpm;
+  });
+}
+
+function startBpmHold(direction: 1 | -1) {
+  changeBpm(direction);
+
+  const startedAt = Date.now();
+
+  bpmHoldTimeout.current = setTimeout(() => {
+    bpmRepeatInterval.current = setInterval(() => {
+      const heldFor = Date.now() - startedAt;
+
+      let step = 1;
+
+      if (heldFor > 1200) {
+        step = 2;
+      }
+
+      if (heldFor > 2500) {
+        step = 5;
+      }
+
+      changeBpm(direction * step);
+    }, 100);
+  }, 350);
+}
+
+function stopBpmHold() {
+  if (bpmHoldTimeout.current) {
+    clearTimeout(bpmHoldTimeout.current);
   }
 
-  function increaseBpm() {
-    setBpm((currentBpm) => Math.min(300, currentBpm + 1));
+  if (bpmRepeatInterval.current) {
+    clearInterval(bpmRepeatInterval.current);
   }
+
+  bpmHoldTimeout.current = null;
+  bpmRepeatInterval.current = null;
+
+  setActiveBpm(bpmDraftRef.current);
+}
 
   function toggleMetronome() {
     setIsPlaying((currentValue) => !currentValue);
@@ -84,8 +223,8 @@ export default function RitmoScreen() {
   setBpm(limitedBpm);
 }
   function cycleBeatAccent(beatIndex: number) {
-  setBeatAccents((currentAccents) =>
-    currentAccents.map((accent, index) => {
+  setBeatAccents((currentAccents) => {
+    const newAccents = currentAccents.map((accent, index) => {
       if (index !== beatIndex) {
         return accent;
       }
@@ -99,8 +238,33 @@ export default function RitmoScreen() {
       }
 
       return 'normal';
-    })
-  );
+    });
+
+    setActiveBeatAccents(newAccents);
+
+    return newAccents;
+  });
+}
+
+async function playBeatSound(accent: BeatAccent) {
+  const player =
+    accent === 'normal'
+      ? clickPlayer
+      : accentPlayer;
+
+  player.volume =
+    accent === 'normal'
+      ? 0.45
+      : accent === 'accent'
+        ? 0.7
+        : 1;
+
+  try {
+    await player.seekTo(0);
+    player.play();
+  } catch (error) {
+    console.log('Erro ao tocar click:', error);
+  }
 }
 
 useEffect(() => {
@@ -109,16 +273,75 @@ useEffect(() => {
     return;
   }
 
-  const intervalMs = 60000 / bpm;
+  const intervalMs = 60000 / activeBpm;
+
+  playBeatSound(
+  activeBeatAccentsRef.current[0]
+);
 
   const interval = setInterval(() => {
-    setCurrentBeat((beat) => (beat + 1) % 4);
+    setCurrentBeat((beat) => {
+      const nextBeat = (beat + 1) % 4;
+
+      playBeatSound(
+  activeBeatAccentsRef.current[nextBeat]
+);
+
+      return nextBeat;
+    });
   }, intervalMs);
 
   return () => {
     clearInterval(interval);
   };
-}, [bpm, isPlaying]);
+}, [bpm, isPlaying, beatAccents]);
+
+useEffect(() => {
+  async function configureAudio() {
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
+      interruptionMode: 'mixWithOthers',
+    });
+
+    console.log('Áudio configurado');
+  }
+
+  configureAudio();
+}, []);
+
+useEffect(() => {
+  if (!isPlaying) {
+    pulseOpacity.setValue(1);
+    return;
+  }
+
+  const currentAccent = beatAccents[currentBeat];
+
+  let flashStartOpacity = 0.65;
+
+  if (currentAccent === 'accent') {
+    flashStartOpacity = 0.4;
+  }
+
+  if (currentAccent === 'strong') {
+    flashStartOpacity = 0.15;
+  }
+
+  pulseOpacity.setValue(flashStartOpacity);
+
+  Animated.timing(pulseOpacity, {
+    toValue: 1,
+    duration: 120,
+    useNativeDriver: true,
+  }).start();
+}, [
+  currentBeat,
+  isPlaying,
+  beatAccents,
+  pulseOpacity,
+]);
+
 
   return (
     <BatimentoScreen style={styles.screen}>
@@ -141,24 +364,27 @@ useEffect(() => {
           </Text>
 
           <View style={styles.beats}>
-  {[0, 1, 2, 3].map((beat) => {
-    const accent = beatAccents[beat];
-    const isCurrentBeat = currentBeat === beat;
+           {[0, 1, 2, 3].map((beat) => {
+            const accent = beatAccents[beat];
+            const isCurrentBeat = currentBeat === beat;
 
-    return (
-      <Pressable
-        key={beat}
-        onPress={() => cycleBeatAccent(beat)}
-        style={styles.beatButton}
-      >
-        <View
-          style={[
-            styles.beat,
+            return (
+             <Pressable
+              key={beat}
+              onPress={() => cycleBeatAccent(beat)}
+              style={styles.beatButton}
+           >
+           <Animated.View
+            style={[
+             styles.beat,
             accent === 'accent' && styles.accentBeat,
             accent === 'strong' && styles.strongBeat,
             isCurrentBeat && styles.activeBeat,
+            isCurrentBeat && {
+            opacity: pulseOpacity,
+           },
           ]}
-        />
+         />
 
         <Text style={styles.beatNumber}>
           {beat + 1}
@@ -166,31 +392,36 @@ useEffect(() => {
       </Pressable>
     );
   })}
-</View>
+   </View>
         </BatimentoCard>
 
         <View style={styles.bpmControls}>
           <BatimentoButton
-            title="-"
-            variant="secondary"
-            onPress={decreaseBpm}
-            style={styles.bpmButton}
+           title="-"
+           variant="secondary"
+           onPressIn={() => startBpmHold(-1)}
+           onPressOut={stopBpmHold}
+           style={styles.bpmButton}
           />
 
           <BatimentoButton
-            title="TAP"
-            variant="secondary"
-            onPress={tapTempo}
-            style={styles.tapButton}
+           title="+"
+           variant="secondary"
+           onPressIn={() => startBpmHold(1)}
+           onPressOut={stopBpmHold}
+           style={styles.bpmButton}
            />
 
-          <BatimentoButton
-            title="+"
-            variant="secondary"
-            onPress={increaseBpm}
-            style={styles.bpmButton}
-          />
         </View>
+
+        <BatimentoButton
+  title="TESTAR SOM"
+  variant="secondary"
+  onPress={() => {
+    clickPlayer.volume = 1;
+    clickPlayer.play();
+  }}
+/>
 
         <BatimentoButton
           title={isPlaying ? 'PARAR' : 'INICIAR'}
@@ -257,28 +488,28 @@ const styles = StyleSheet.create({
 },
 
   beat: {
-  width: 12,
-  height: 12,
+  width: 20,
+  height: 20,
   borderRadius: theme.radius.pill,
   borderWidth: 1.5,
   borderColor: theme.colors.brand.primary,
+  backgroundColor: 'transparent',
 },
 
-  accentBeat: {
-  width: 18,
-  height: 18,
+accentBeat: {
   backgroundColor: theme.colors.brand.primaryLight,
+  borderWidth: 2,
 },
 
 strongBeat: {
-  width: 24,
-  height: 24,
   backgroundColor: theme.colors.brand.primary,
+  borderWidth: 3,
 },
 
 activeBeat: {
-  borderWidth: 3,
+  backgroundColor: theme.colors.brand.primaryDark,
   borderColor: theme.colors.brand.primaryDark,
+  opacity: 1,
 },
 
 beatNumber: {

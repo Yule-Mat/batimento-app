@@ -9,7 +9,9 @@ import { theme } from '../../constants/theme';
 
 type BatimentoButtonProps = {
   title: string;
-  onPress: () => void;
+  onPress?: () => void;
+  onPressIn?: () => void;
+  onPressOut?: () => void;
   variant?: 'primary' | 'secondary';
   style?: ViewStyle;
 };
@@ -17,6 +19,8 @@ type BatimentoButtonProps = {
 export function BatimentoButton({
   title,
   onPress,
+  onPressIn,
+  onPressOut,
   variant = 'primary',
   style,
 }: BatimentoButtonProps) {
@@ -26,6 +30,8 @@ export function BatimentoButton({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       style={({ pressed }) => [
         styles.base,
         isPrimary ? styles.primary : styles.secondary,
