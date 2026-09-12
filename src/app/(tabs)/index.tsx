@@ -66,17 +66,20 @@ useEffect(() => {
   activeBeatAccentsRef.current = activeBeatAccents;
 }, [activeBeatAccents]);
 
-  const activeBpmRef = useRef(activeBpm);
-  useEffect(() => {
-  activeBpmRef.current = activeBpm;
-}, [activeBpm]);
-
   useMetronomeClock({
   isPlaying,
   bpm: activeBpm,
   beatsPerMeasure: 4,
+  subdivisionsPerBeat: 1,
 
-  onBeat: (beat) => {
+  onTick: ({
+    beat,
+    isMainBeat,
+  }) => {
+    if (!isMainBeat) {
+      return;
+    }
+
     setCurrentBeat(beat);
 
     playBeatSound(

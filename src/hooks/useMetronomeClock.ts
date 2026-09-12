@@ -4,25 +4,36 @@ type UseMetronomeClockProps = {
   isPlaying: boolean;
   bpm: number;
   beatsPerMeasure: number;
-  onBeat: (beat: number) => void;
+  subdivisionsPerBeat?: number;
+  onTick: (data: {
+    beat: number;
+    subdivision: number;
+    isMainBeat: boolean;
+  }) => void;
 };
 
 export function useMetronomeClock({
   isPlaying,
   bpm,
   beatsPerMeasure,
-  onBeat,
+  subdivisionsPerBeat = 1,
+  onTick,
 }: UseMetronomeClockProps) {
   const bpmRef = useRef(bpm);
-  const onBeatRef = useRef(onBeat);
+  const onTickRef = useRef(onTick);
+  const subdivisionsRef = useRef(subdivisionsPerBeat);
 
   useEffect(() => {
     bpmRef.current = bpm;
   }, [bpm]);
 
   useEffect(() => {
-    onBeatRef.current = onBeat;
-  }, [onBeat]);
+    onTickRef.current = onTick;
+  }, [onTick]);
+
+  useEffect(() => {
+    subdivisionsRef.current = subdivisionsPerBeat;
+  }, [subdivisionsPerBeat]);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -30,23 +41,45 @@ export function useMetronomeClock({
     }
 
     let beat = 0;
+    let subdivision = 0;
     let timeout: ReturnType<typeof setTimeout>;
 
-    onBeatRef.current(0);
+    onTickRef.current({
+      beat: 0,
+      subdivision: 0,
+      isMainBeat: true,
+    });
 
-    function scheduleNextBeat() {
-      const intervalMs = 60000 / bpmRef.current;
+    function scheduleNextTick() {
+      const subdivisions =
+        subdivisionsRef.current;
+
+      const intervalMs =
+        60000 /
+        bpmRef.current /
+        subdivisions;
 
       timeout = setTimeout(() => {
-        beat = (beat + 1) % beatsPerMeasure;
+        subdivision += 1;
 
-        onBeatRef.current(beat);
+        if (subdivision >= subdivisions) {
+          subdivision = 0;
+          beat =
+            (beat + 1) %
+            beatsPerMeasure;
+        }
 
-        scheduleNextBeat();
+        onTickRef.current({
+          beat,
+          subdivision,
+          isMainBeat: subdivision === 0,
+        });
+
+        scheduleNextTick();
       }, intervalMs);
     }
 
-    scheduleNextBeat();
+    scheduleNextTick();
 
     return () => {
       clearTimeout(timeout);
