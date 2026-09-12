@@ -49,28 +49,27 @@ const [activeBeatAccents, setActiveBeatAccents] =
   ]);
 
 const clickPlayer = useAudioPlayer(clickSource);
-
 const accentPlayer = useAudioPlayer(accentSource);
-
 const pulseOpacity = useRef(new Animated.Value(1)).current; 
-
 const activeBeatAccentsRef = useRef(activeBeatAccents);
-
 const bpmHoldTimeout = useRef<ReturnType<typeof setTimeout> | null>(
   null
 );
-
 const bpmRepeatInterval = useRef<ReturnType<typeof setInterval> | null>(
   null
 );
-
 const bpmDraftRef = useRef(bpm);
+const beatAccentsDraftRef = useRef(beatAccents);
 
 useEffect(() => {
   activeBeatAccentsRef.current = activeBeatAccents;
 }, [activeBeatAccents]);
 
   const activeBpmRef = useRef(activeBpm);
+  useEffect(() => {
+  activeBpmRef.current = activeBpm;
+}, [activeBpm]);
+
   useEffect(() => {
   if (!isPlaying) {
     setCurrentBeat(0);
@@ -240,10 +239,22 @@ function stopBpmHold() {
       return 'normal';
     });
 
-    setActiveBeatAccents(newAccents);
+    beatAccentsDraftRef.current = newAccents;
 
     return newAccents;
   });
+}
+
+function commitBeatAccents() {
+  const newActiveAccents = [
+    ...beatAccentsDraftRef.current,
+  ];
+
+  activeBeatAccentsRef.current = newActiveAccents;
+
+  setActiveBeatAccents(
+    newActiveAccents
+  );
 }
 
 async function playBeatSound(accent: BeatAccent) {
@@ -266,35 +277,6 @@ async function playBeatSound(accent: BeatAccent) {
     console.log('Erro ao tocar click:', error);
   }
 }
-
-useEffect(() => {
-  if (!isPlaying) {
-    setCurrentBeat(0);
-    return;
-  }
-
-  const intervalMs = 60000 / activeBpm;
-
-  playBeatSound(
-  activeBeatAccentsRef.current[0]
-);
-
-  const interval = setInterval(() => {
-    setCurrentBeat((beat) => {
-      const nextBeat = (beat + 1) % 4;
-
-      playBeatSound(
-  activeBeatAccentsRef.current[nextBeat]
-);
-
-      return nextBeat;
-    });
-  }, intervalMs);
-
-  return () => {
-    clearInterval(interval);
-  };
-}, [bpm, isPlaying, beatAccents]);
 
 useEffect(() => {
   async function configureAudio() {
@@ -371,9 +353,10 @@ useEffect(() => {
             return (
              <Pressable
               key={beat}
-              onPress={() => cycleBeatAccent(beat)}
+              onPressIn={() => cycleBeatAccent(beat)}
+              onPressOut={commitBeatAccents}
               style={styles.beatButton}
-           >
+            >
            <Animated.View
             style={[
              styles.beat,
@@ -413,15 +396,6 @@ useEffect(() => {
            />
 
         </View>
-
-        <BatimentoButton
-  title="TESTAR SOM"
-  variant="secondary"
-  onPress={() => {
-    clickPlayer.volume = 1;
-    clickPlayer.play();
-  }}
-/>
 
         <BatimentoButton
           title={isPlaying ? 'PARAR' : 'INICIAR'}
