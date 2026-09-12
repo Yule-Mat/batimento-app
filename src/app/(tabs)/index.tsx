@@ -240,6 +240,7 @@ function commitBeatAccents() {
 }
 
 async function playBeatSound(accent: BeatAccent) {
+  
   const player =
     accent === 'normal'
       ? clickPlayer
@@ -257,6 +258,20 @@ async function playBeatSound(accent: BeatAccent) {
     player.play();
   } catch (error) {
     console.log('Erro ao tocar click:', error);
+  }
+}
+
+async function playSubdivisionSound() {
+  clickPlayer.volume = 0.22;
+
+  try {
+    await clickPlayer.seekTo(0);
+    clickPlayer.play();
+  } catch (error) {
+    console.log(
+      'Erro ao tocar subdivisão:',
+      error
+    );
   }
 }
 
