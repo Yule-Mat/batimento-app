@@ -28,12 +28,15 @@ preload(clickSource);
 preload(accentSource);
 
 type BeatAccent = 'normal' | 'accent' | 'strong';
+type Subdivision = 1 | 2 | 3 | 4;
 
 export default function RitmoScreen() {
   const [bpm, setBpm] = useState(120);
   const [activeBpm, setActiveBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
+  const [subdivision, setSubdivision] =
+  useState<Subdivision>(1);
   const [beatAccents, setBeatAccents] = useState<BeatAccent[]>([
   'strong',
   'normal',
@@ -70,7 +73,7 @@ useEffect(() => {
   isPlaying,
   bpm: activeBpm,
   beatsPerMeasure: 4,
-  subdivisionsPerBeat: 1,
+  subdivisionsPerBeat: subdivision,
 
   onTick: ({
     beat,
@@ -355,6 +358,90 @@ useEffect(() => {
    </View>
         </BatimentoCard>
 
+        <View style={styles.subdivisionSection}>
+  <Text style={styles.subdivisionLabel}>
+    SUBDIVISÃO
+  </Text>
+
+  <View style={styles.subdivisionControls}>
+    <Pressable
+      onPress={() => setSubdivision(1)}
+      style={[
+        styles.subdivisionButton,
+        subdivision === 1 &&
+          styles.subdivisionButtonActive,
+      ]}
+    >
+      <Text
+        style={[
+          styles.subdivisionButtonText,
+          subdivision === 1 &&
+            styles.subdivisionButtonTextActive,
+        ]}
+      >
+        Pulso
+      </Text>
+    </Pressable>
+
+    <Pressable
+      onPress={() => setSubdivision(2)}
+      style={[
+        styles.subdivisionButton,
+        subdivision === 2 &&
+          styles.subdivisionButtonActive,
+      ]}
+    >
+      <Text
+        style={[
+          styles.subdivisionButtonText,
+          subdivision === 2 &&
+            styles.subdivisionButtonTextActive,
+        ]}
+      >
+        2
+      </Text>
+    </Pressable>
+
+    <Pressable
+      onPress={() => setSubdivision(3)}
+      style={[
+        styles.subdivisionButton,
+        subdivision === 3 &&
+          styles.subdivisionButtonActive,
+      ]}
+    >
+      <Text
+        style={[
+          styles.subdivisionButtonText,
+          subdivision === 3 &&
+            styles.subdivisionButtonTextActive,
+        ]}
+      >
+        3
+      </Text>
+    </Pressable>
+
+    <Pressable
+      onPress={() => setSubdivision(4)}
+      style={[
+        styles.subdivisionButton,
+        subdivision === 4 &&
+          styles.subdivisionButtonActive,
+      ]}
+    >
+      <Text
+        style={[
+          styles.subdivisionButtonText,
+          subdivision === 4 &&
+            styles.subdivisionButtonTextActive,
+        ]}
+      >
+        4
+      </Text>
+    </Pressable>
+  </View>
+</View>
+
         <View style={styles.bpmControls}>
           <BatimentoButton
            title="-"
@@ -480,5 +567,47 @@ beatNumber: {
   },
   tapButton: {
   flex: 1.5,
+},
+subdivisionSection: {
+  marginBottom: theme.spacing.lg,
+},
+
+subdivisionLabel: {
+  marginBottom: theme.spacing.sm,
+  textAlign: 'center',
+  fontSize: theme.typography.size.caption,
+  fontWeight: theme.typography.weight.semibold,
+  color: theme.colors.neutral.textSecondary,
+},
+
+subdivisionControls: {
+  flexDirection: 'row',
+  gap: theme.spacing.sm,
+},
+
+subdivisionButton: {
+  flex: 1,
+  minHeight: 44,
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderWidth: 1.5,
+  borderColor: theme.colors.neutral.border,
+  borderRadius: theme.radius.md,
+  backgroundColor: theme.colors.neutral.surface,
+},
+
+subdivisionButtonActive: {
+  borderColor: theme.colors.brand.primary,
+  backgroundColor: theme.colors.brand.primary,
+},
+
+subdivisionButtonText: {
+  fontSize: theme.typography.size.caption,
+  fontWeight: theme.typography.weight.semibold,
+  color: theme.colors.neutral.text,
+},
+
+subdivisionButtonTextActive: {
+  color: theme.colors.neutral.white,
 },
 });
